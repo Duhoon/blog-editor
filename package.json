@@ -12,6 +12,7 @@
   "license": "ISC",
   "packageManager": "pnpm@10.4.1",
   "dependencies": {
+    "@supabase/supabase-js": "^2.79.0",
     "firebase": "^11.4.0"
   }
 }
