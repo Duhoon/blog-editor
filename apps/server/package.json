@@ -5,6 +5,7 @@
   "main": "index.ts",
   "scripts": {
     "start": "tsx watch ./src/index.ts",
+    "migration": "tsx ./src/model/migration.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -12,6 +13,7 @@
   "license": "ISC",
   "packageManager": "pnpm@10.4.1",
   "dependencies": {
+    "dotenv": "^17.2.3",
     "express": "^4.21.2",
     "morgan": "^1.10.0",
     "open": "^10.1.0",
