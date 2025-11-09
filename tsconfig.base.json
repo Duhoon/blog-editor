@@ -8,6 +8,7 @@
     "skipLibCheck": true,
   },
   "references": [
-    { "path": "./packages/types"}
+    { "path": "./packages/types"},
+    { "path": "./apps/server"}
   ]
 }

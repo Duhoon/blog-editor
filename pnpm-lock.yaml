@@ -81,6 +81,9 @@ importers:
 
   apps/server:
     dependencies:
+      '@blog-editor/types':
+        specifier: workspace:^
+        version: link:../../packages/types
       dotenv:
         specifier: ^17.2.3
         version: 17.2.3
@@ -93,9 +96,6 @@ importers:
       open:
         specifier: ^10.1.0
         version: 10.1.0
-      types:
-        specifier: workspace:^
-        version: link:../../packages/types
       winston:
         specifier: ^3.17.0
         version: 3.17.0

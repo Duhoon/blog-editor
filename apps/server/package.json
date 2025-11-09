@@ -1,5 +1,6 @@
 {
-  "name": "server",
+  "name": "@blog-editor/server",
+  "private": true,
   "version": "1.0.0",
   "description": "",
   "main": "index.ts",
@@ -13,11 +14,11 @@
   "license": "ISC",
   "packageManager": "pnpm@10.4.1",
   "dependencies": {
+    "@blog-editor/types": "workspace:^",
     "dotenv": "^17.2.3",
     "express": "^4.21.2",
     "morgan": "^1.10.0",
     "open": "^10.1.0",
-    "types": "workspace:^",
     "winston": "^3.17.0"
   },
   "devDependencies": {
