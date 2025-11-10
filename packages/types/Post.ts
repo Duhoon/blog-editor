@@ -6,11 +6,11 @@ export interface PostInsertDto {
   brief?: string;
   content: string;
   slug: string;
-  createdDate: Date;
-  updatedDate: Date;
-  publishedDate?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+  publishedAt?: Date;
   thumbnail?: string;
-  language: Locales;
+  locale: Locales;
 }
 
 export interface PostUpdateDto {
@@ -19,11 +19,11 @@ export interface PostUpdateDto {
   brief?: string;
   content?: string;
   slug?: string;
-  createdDate?: Date;
-  updatedDate?: Date;
-  publishedDate?: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
+  publishedAt?: Date;
   thumbnail?: string;
-  language?: Locales;
+  locale?: Locales;
 }
 
 export interface PostMetadata {

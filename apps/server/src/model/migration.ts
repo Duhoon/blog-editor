@@ -4,6 +4,7 @@ import * as dotenv from "dotenv";
 import path from 'path';
 import { exportFrontmatter } from "./util";
 import { Locales, PostInsertDto, PostMetadata } from "@blog-editor/types/Post";
+import { convertKeysToSnakeCase } from "../utils";
 dotenv.config();
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -28,12 +29,12 @@ const migration = async()=>{
   try {
     // 파일 URL 불러오기
     const fileUrls = await getPostFileUrls(supabase);
+    console.log(`fileUrls => ${[fileUrls]}`)
 
     // 개별 파일 불러와서 메타데이터 추출하기
     const fileTotalCount = fileUrls.length;
     for (const [idx, fileUrl] of fileUrls.slice(0, 1).entries()) {
       console.log(`process current status: ${idx + 1} / ${fileTotalCount}`);
-      
       const {data: file} = await axios.get(fileUrl);
 
 
@@ -41,8 +42,13 @@ const migration = async()=>{
       console.log("File Metadata");
       console.log(metadata);
 
-      // TODO: slug와 locale 빼내는 작업(URL 에서 파싱하는게 좋을 것 같음)
-      convertFileToPost(file, {...(metadata as PostMetadata) });
+      const {locale, category, slug} = parseLocaleAndSlugFromUrl(fileUrl)
+
+      const post = convertFileToPost(file, {...(metadata as PostMetadata), locale, slug })
+      const {error} = await supabase.from("posts").insert( convertKeysToSnakeCase(post) );
+      if (error) {
+        console.log(error);
+      }
     }
   } catch (error) {
     console.log(error);
@@ -72,8 +78,6 @@ async function getPostFileUrls (supabase: SupabaseClient) {
     return fileUrls;
   }))).flat();
 
-  console.log(`fileUrls => ${[fileUrls]}`)
-
   return fileUrls;
 }
 
@@ -83,11 +87,19 @@ function convertFileToPost( file: string, metadata: PostMetadata & { slug: strin
     thumbnail: metadata.thumbnail,
     content: file,
     slug: metadata.slug,
-    createdDate: new Date(),
-    updatedDate: new Date(),
-    publishedDate: new Date(metadata.published),
-    language: metadata.locale,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    publishedAt: new Date(metadata.published),
+    locale: metadata.locale,
   }
+}
+
+function parseLocaleAndSlugFromUrl(fileUrl: string): { locale: Locales, category: string, slug: string  } {
+  const preReg = /https:\/\/.*posts\//;
+  const paths = fileUrl.replace(preReg, "")
+  const [locale, category, filename] = paths.split("/");
+  const localeTyped = (locale as unknown) as Locales;
+  return {locale: localeTyped, category, slug: filename.replace(".md", "")};
 }
 
 migration();
