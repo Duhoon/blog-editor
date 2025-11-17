@@ -13,6 +13,18 @@ const SUPABASE_KEY = process.env.SUPABASE_KEY;
 const locales = ["ko", "en-US"];
 const categories = ["development", "movie", "book"];
 
+const categoryNameToId = {
+  "development": "DV",
+  "movie": "MV",
+  "book": "BO"
+};
+
+const categoryIdToName = Object.entries(categoryNameToId)
+  .reduce((pre, [name, id])=> {
+    pre[id] = name 
+    return pre;
+  }, {} as Record<string, string>)
+
 const prePaths: string[] = []
 for (const locale of locales) {
   for (const category of categories) {
