@@ -13,17 +13,11 @@ const SUPABASE_KEY = process.env.SUPABASE_KEY;
 const locales = ["ko", "en-US"];
 const categories = ["development", "movie", "book"];
 
-const categoryNameToId = {
-  "development": "DV",
-  "movie": "MV",
-  "book": "BO"
-};
-
-const categoryIdToName = Object.entries(categoryNameToId)
-  .reduce((pre, [name, id])=> {
-    pre[id] = name 
-    return pre;
-  }, {} as Record<string, string>)
+const categoryNameData = {
+  "development": {"ko": "개발", "en-US": "development"},
+  "movie": {"ko": "영화", "en-US": "movie"},
+  "book": {"ko": "책", "en-US": "book"},
+} as Record<string, Record<string, string>>;
 
 const prePaths: string[] = []
 for (const locale of locales) {
@@ -39,6 +33,21 @@ const migration = async()=>{
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
   
   try {
+    /**
+     * 카테고리 이관
+     */
+    const categoryEntries = Object.keys(categoryNameData).map(category=>{
+      return {
+        id: category,
+        name: categoryNameData[category],
+      }
+    });
+    await supabase.from("categories").insert(categoryEntries);
+    console.log("카테고리 이관 완료");
+
+    /**
+     * 포스트 이관
+     */
     // 파일 URL 불러오기
     const fileUrls = await getPostFileUrls(supabase);
     console.log(`fileUrls => ${[fileUrls]}`)
