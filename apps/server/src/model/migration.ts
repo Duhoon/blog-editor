@@ -36,7 +36,7 @@ const migration = async()=>{
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
   
   try {
-    await migrationCategories(supabase);
+    // await migrationCategories(supabase);
     await migrationPosts(supabase);
   }catch (error) {
     console.log(error);
@@ -52,6 +52,7 @@ async function migrationCategories (supabase: SupabaseClient) {
       return {
         id: category,
         name: categoryNameData[category],
+        description: categoryNameData[category],
       }
     });
     const {error} = await supabase.from("categories").insert(categoryEntries);
@@ -88,12 +89,38 @@ async function migrationPosts (supabase: SupabaseClient) {
     const {locale, category, slug} = parseLocaleAndSlugFromUrl(fileUrl)
 
     const post = convertFileToPost(file, {...(metadata as PostMetadata), locale, slug })
-    const {error: postInputError} = await supabase.from("posts").insert( convertKeysToSnakeCase(post) );
-    if (postInputError) {
+    const {error: postInsertError} = await supabase.from("posts")
+      .insert( convertKeysToSnakeCase(post) )
+    if (postInsertError) {
       console.log(`에러: post 이관 중 발생`);
-      console.log(postInputError);
+      console.log(postInsertError);
       continue;
     }
+
+    const {error: postFindError, data} = await supabase.from("posts")
+      .select()
+      .eq("slug", slug);
+    
+    if (postFindError) {
+      console.log(`에러: DB에서 포스트 불러오기 실패`);
+      console.log(postFindError);
+    }
+
+    if (!data || data.length <= 0) {
+      console.log(`에러: DB에서 slug:${slug} 해당하는 포스트 찾기 실패`);
+      continue;
+    }
+    const postInDB = data[0];
+
+    const {error: categoryLinkInsertError} = await supabase
+      .from("post_category_links")
+      .insert( 
+        {
+          post_id: postInDB.id,
+          category_id: category,
+          is_active: true,
+        } 
+      )
   }
 }
 

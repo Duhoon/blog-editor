@@ -18,7 +18,7 @@ COMMENT ON TABLE posts IS '작성글 테이블';
 -- 카테고리
 CREATE TABLE categories
 (
-  id VARCHAR(5) PRIMARY KEY NOT NULL,
+  id VARCHAR(50) PRIMARY KEY NOT NULL,
   name JSONB NOT NULL, -- {"ko": "개발", "en": "Development"}
   description JSONB NOT NULL, -- {"ko": "블라블라", "en": "블라블라"}
   created_at TIMESTAMP DEFAULT NOW(),
@@ -32,7 +32,7 @@ COMMENT ON TABLE categories.id IS 'DV:개발, MV:영화, MU: 음악, BO: 독서'
 CREATE TABLE post_category_links
 (
   post_id INT REFERENCES posts(id) NOT NULL,
-  category_id VARCHAR(5) REFERENCES categories(id) NOT NULL,
+  category_id VARCHAR(50) REFERENCES categories(id) NOT NULL,
   is_active BOOLEAN DEFAULT true,
   updated_at TIMESTAMP DEFAULT NOW(),
   PRIMARY KEY (post_id, category_id)
