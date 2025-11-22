@@ -27,54 +27,76 @@ for (const locale of locales) {
 }
 console.log(`prePaths => ${prePaths}`);
 
+/**
+ * 마이그레이션 작업 함수
+ */
 const migration = async()=>{
   if (!SUPABASE_URL || !SUPABASE_KEY ) return;
   // supabase 클라이언트 연결
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
   
   try {
-    /**
-     * 카테고리 이관
-     */
+    await migrationCategories(supabase);
+    await migrationPosts(supabase);
+  }catch (error) {
+    console.log(error);
+  }
+}
+
+/**
+ * 카테고리 이관
+ */
+async function migrationCategories (supabase: SupabaseClient) {
+
     const categoryEntries = Object.keys(categoryNameData).map(category=>{
       return {
         id: category,
         name: categoryNameData[category],
       }
     });
-    await supabase.from("categories").insert(categoryEntries);
-    console.log("카테고리 이관 완료");
-
-    /**
-     * 포스트 이관
-     */
-    // 파일 URL 불러오기
-    const fileUrls = await getPostFileUrls(supabase);
-    console.log(`fileUrls => ${[fileUrls]}`)
-
-    // 개별 파일 불러와서 메타데이터 추출하기
-    const fileTotalCount = fileUrls.length;
-    for (const [idx, fileUrl] of fileUrls.slice(0, 1).entries()) {
-      console.log(`process current status: ${idx + 1} / ${fileTotalCount}`);
-      const {data: file} = await axios.get(fileUrl);
-
-
-      const { data : {frontmatter: metadata}} = await exportFrontmatter(file);
-      console.log("File Metadata");
-      console.log(metadata);
-
-      const {locale, category, slug} = parseLocaleAndSlugFromUrl(fileUrl)
-
-      const post = convertFileToPost(file, {...(metadata as PostMetadata), locale, slug })
-      const {error} = await supabase.from("posts").insert( convertKeysToSnakeCase(post) );
-      if (error) {
-        console.log(error);
-      }
+    const {error} = await supabase.from("categories").insert(categoryEntries);
+    if (error) {
+      console.log("카테고리 이관 중 에러 발생");
+      console.log(error);
+    } else {
+      console.log("카테고리 이관 완료");
     }
-  } catch (error) {
-    console.log(error);
+}
+
+/**
+ * 포스트 이관
+ */
+async function migrationPosts (supabase: SupabaseClient) {
+  /**
+   * 포스트 이관
+   */
+  // 파일 URL 불러오기
+  const fileUrls = await getPostFileUrls(supabase);
+  console.log(`fileUrls => ${[fileUrls]}`)
+
+  // 개별 파일 불러와서 메타데이터 추출하기
+  const fileTotalCount = fileUrls.length;
+  for (const [idx, fileUrl] of fileUrls.slice(0, 1).entries()) {
+    console.log(`process current status: ${idx + 1} / ${fileTotalCount}`);
+    const {data: file} = await axios.get(fileUrl);
+
+
+    const { data : {frontmatter: metadata}} = await exportFrontmatter(file);
+    console.log("File Metadata");
+    console.log(metadata);
+
+    const {locale, category, slug} = parseLocaleAndSlugFromUrl(fileUrl)
+
+    const post = convertFileToPost(file, {...(metadata as PostMetadata), locale, slug })
+    const {error: postInputError} = await supabase.from("posts").insert( convertKeysToSnakeCase(post) );
+    if (postInputError) {
+      console.log(`에러: post 이관 중 발생`);
+      console.log(postInputError);
+      continue;
+    }
   }
 }
+
 
 async function getPostFileUrls (supabase: SupabaseClient) {
   // 추후 사용 안하면 삭제될 코드 {
@@ -124,7 +146,3 @@ function parseLocaleAndSlugFromUrl(fileUrl: string): { locale: Locales, category
 }
 
 migration();
-
-
-
-
