@@ -47,27 +47,28 @@ const migration = async()=>{
  * 카테고리 이관
  */
 async function migrationCategories (supabase: SupabaseClient) {
-
-    const categoryEntries = Object.keys(categoryNameData).map(category=>{
-      return {
-        id: category,
-        name: categoryNameData[category],
-        description: categoryNameData[category],
-      }
-    });
-    const {error} = await supabase.from("categories").insert(categoryEntries);
-    if (error) {
-      console.log("카테고리 이관 중 에러 발생");
-      console.log(error);
-    } else {
-      console.log("카테고리 이관 완료");
+  const categoryEntries = Object.keys(categoryNameData).map(category=>{
+    return {
+      id: category,
+      name: categoryNameData[category],
+      description: categoryNameData[category],
     }
+  });
+  const {error} = await supabase.from("categories").insert(categoryEntries);
+  if (error) {
+    console.log("카테고리 이관 중 에러 발생");
+    console.log(error);
+  } else {
+    console.log("카테고리 이관 완료");
+  }
 }
 
 /**
  * 포스트 이관
  */
 async function migrationPosts (supabase: SupabaseClient) {
+  // 태그 이관 위한 Set 자료형
+  const tagSetBucket = new Set<string>();
   /**
    * 포스트 이관
    */
@@ -121,6 +122,33 @@ async function migrationPosts (supabase: SupabaseClient) {
           is_active: true,
         } 
       )
+    if (categoryLinkInsertError) {
+      console.log(`에러: 포스트-카테고리 N:M 맵핑 데이터 추가 실패`);
+    }
+
+    /**
+     * 태그 이관
+     */
+    const tagTempSet = new Set<string>();
+    const tags = (metadata as PostMetadata).tags;
+    for (const tag of tags) {
+      if (tagSetBucket.has(tag)) {
+        // TODO: bucket에 이미 들어있는 태그 처리
+      } else {
+        tagSetBucket.add(tag);
+        tagTempSet.add(tag);
+      }
+    }
+
+
+    const {error: tagInsertError} = await supabase.from('tags')
+          .insert([...tagTempSet].map(tag=> ({name: tag})));
+    if(tagInsertError) {
+      console.log(`에러: tag 삽입 중 문제 발생`);
+      continue;
+    }
+
+    // TODO: post-tag N:M 맵핑 데이터 추가하기
   }
 }
 
