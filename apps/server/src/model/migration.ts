@@ -4,6 +4,7 @@ import * as dotenv from "dotenv";
 import path from 'path';
 import { exportFrontmatter } from "./util";
 import { Locales, PostInsertDto, PostMetadata } from "@blog-editor/types/Post";
+import { TagModel, TagPostLinksModel } from '@blog-editor/types/Category';
 import { convertKeysToSnakeCase } from "../utils";
 dotenv.config();
 
@@ -68,7 +69,12 @@ async function migrationCategories (supabase: SupabaseClient) {
  */
 async function migrationPosts (supabase: SupabaseClient) {
   // 태그 이관 위한 Set 자료형
-  const tagSetBucket = new Set<string>();
+  const tagMapBucket = new Map<string, TagModel>();
+  const {data: tagsInDB} = await supabase.from("tags").select();
+  if (tagsInDB && tagsInDB.length > 0){
+    tagsInDB.forEach((tag: TagModel) => tagMapBucket.set(tag.name, tag));
+  }
+
   /**
    * 포스트 이관
    */
@@ -132,23 +138,40 @@ async function migrationPosts (supabase: SupabaseClient) {
     const tagTempSet = new Set<string>();
     const tags = (metadata as PostMetadata).tags;
     for (const tag of tags) {
-      if (tagSetBucket.has(tag)) {
-        // TODO: bucket에 이미 들어있는 태그 처리
-      } else {
-        tagSetBucket.add(tag);
+      if (!tagMapBucket.has(tag)) {
         tagTempSet.add(tag);
       }
     }
 
-
-    const {error: tagInsertError} = await supabase.from('tags')
-          .insert([...tagTempSet].map(tag=> ({name: tag})));
+    const {data: tagEntries, error: tagInsertError} = await supabase.from('tags')
+          .insert([...tagTempSet].map(tag=> ({name: tag}))).select();
     if(tagInsertError) {
       console.log(`에러: tag 삽입 중 문제 발생`);
       continue;
     }
 
-    // TODO: post-tag N:M 맵핑 데이터 추가하기
+    tagEntries.forEach((tagEntry)=>{
+      if (!tagMapBucket.has(tagEntry.name)) {
+        tagMapBucket.set(tagEntry.name, tagEntry);
+      }
+    })
+    
+    const tagPostLinkEntry: [] = [];
+    tags.map((tag)=>{
+      const tagInDB = tagMapBucket.get(tag);
+      if (!tagInDB || !tagInDB.id) return;
+      return {
+        post_id: postInDB.id,
+        tag_id: tagInDB,
+        is_active: true
+      }
+    })
+
+    // TODO: 입력이 안돼는 것 확인 필요
+    const { error: TagPostLinkInsertError } = await supabase.from("tag_post_links").insert(tagPostLinkEntry)
+    if ( TagPostLinkInsertError ){
+      console.log(`에러: 태그-포스트 맵핑 정보 입력 에러, ${TagPostLinkInsertError}`);
+    }
   }
 }
 
