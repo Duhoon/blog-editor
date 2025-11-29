@@ -84,7 +84,7 @@ async function migrationPosts (supabase: SupabaseClient) {
 
   // 개별 파일 불러와서 메타데이터 추출하기
   const fileTotalCount = fileUrls.length;
-  for (const [idx, fileUrl] of fileUrls.slice(0, 1).entries()) {
+  for (const [idx, fileUrl] of fileUrls.entries()) {
     console.log(`process current status: ${idx + 1} / ${fileTotalCount}`);
     const {data: file} = await axios.get(fileUrl);
 
@@ -97,7 +97,7 @@ async function migrationPosts (supabase: SupabaseClient) {
 
     const post = convertFileToPost(file, {...(metadata as PostMetadata), locale, slug })
     const {error: postInsertError} = await supabase.from("posts")
-      .insert( convertKeysToSnakeCase(post) )
+      .insert( convertKeysToSnakeCase({...post, is_published : true}) )
     if (postInsertError) {
       console.log(`에러: post 이관 중 발생`);
       console.log(postInsertError);
@@ -126,10 +126,11 @@ async function migrationPosts (supabase: SupabaseClient) {
           post_id: postInDB.id,
           category_id: category,
           is_active: true,
-        } 
+        }
       )
     if (categoryLinkInsertError) {
       console.log(`에러: 포스트-카테고리 N:M 맵핑 데이터 추가 실패`);
+      console.log(categoryLinkInsertError);
     }
 
     /**
@@ -137,6 +138,7 @@ async function migrationPosts (supabase: SupabaseClient) {
      */
     const tagTempSet = new Set<string>();
     const tags = (metadata as PostMetadata).tags;
+    if (!tags || tags.length <= 0) continue;
     for (const tag of tags) {
       if (!tagMapBucket.has(tag)) {
         tagTempSet.add(tag);
@@ -147,6 +149,7 @@ async function migrationPosts (supabase: SupabaseClient) {
           .insert([...tagTempSet].map(tag=> ({name: tag}))).select();
     if(tagInsertError) {
       console.log(`에러: tag 삽입 중 문제 발생`);
+      console.log(tagInsertError);
       continue;
     }
 
@@ -156,21 +159,20 @@ async function migrationPosts (supabase: SupabaseClient) {
       }
     })
     
-    const tagPostLinkEntry: [] = [];
-    tags.map((tag)=>{
+    const tagPostLinkEntry = tags.map((tag)=>{
       const tagInDB = tagMapBucket.get(tag);
       if (!tagInDB || !tagInDB.id) return;
       return {
         post_id: postInDB.id,
-        tag_id: tagInDB,
+        tag_id: tagInDB.id,
         is_active: true
       }
     })
 
-    // TODO: 입력이 안돼는 것 확인 필요
     const { error: TagPostLinkInsertError } = await supabase.from("tag_post_links").insert(tagPostLinkEntry)
     if ( TagPostLinkInsertError ){
-      console.log(`에러: 태그-포스트 맵핑 정보 입력 에러, ${TagPostLinkInsertError}`);
+      console.log(`에러: 태그-포스트 맵핑 정보 입력 에러`);
+      console.log(TagPostLinkInsertError);
     }
   }
 }

@@ -15,6 +15,9 @@ CREATE TABLE posts (
 
 COMMENT ON TABLE posts IS '작성글 테이블';
 
+-- 251129 이관 작업 중 기존 데이터 중 범위를 벗어나는 데이터 처리 위한 사이즈 변경
+ALTER TABLE posts ALTER COLUMN title TYPE character varying(100);
+
 -- 카테고리
 CREATE TABLE categories
 (
@@ -56,7 +59,7 @@ CREATE TABLE tag_post_links
 (
   tag_id INT REFERENCES tags(id) NOT NULL,
   post_id INT REFERENCES posts(id) NOT NULL,
-  is_active INT NOT NULL,
+  is_active BOOLEAN NOT NULL,
   updated_at TIMESTAMP DEFAULT NOW() 
 );
 
