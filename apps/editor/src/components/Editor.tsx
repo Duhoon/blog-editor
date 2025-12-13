@@ -1,4 +1,5 @@
 import { Editor as EditorUI } from "@toast-ui/react-editor"
+import Button from "./Button";
 import "@toast-ui/editor/toastui-editor.css";
 
 import { useState, useRef, useEffect } from "react";
@@ -16,10 +17,16 @@ export default function Editor() {
 
   return (
     <div className="px-4">
+      {/* 포스트 발행 및 액션 바 */}
+      <div className={`flex justify-end py-2`}>
+        <Button>발행</Button>
+      </div>
       {/* 포스트 제목 입력 부분 */}
       <div>
         <input 
-          className={"w-full text-4xl p-2 border-1 border-gray-300 rounded-lg"} 
+          className={`
+            w-full text-4xl p-2 border-1 border-gray-300 rounded-lg outline-none
+          `} 
           placeholder="제목을 입력하세요."
           onChange={(e)=>{
             setTitle(e.target.value);
