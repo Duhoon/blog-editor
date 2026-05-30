@@ -1,15 +1,14 @@
-import { ReactEventHandler } from "react"
+import { ButtonHTMLAttributes } from "react"
 
-interface ButtonProps {
-  onClick?: ReactEventHandler<HTMLButtonElement>,
+interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode
 }
 
-export default function Button({onClick, children}: ButtonProps){
+export default function Button({children, className = "", ...props}: ButtonProps){
   return (
     <button 
-      className={`hover:cursor-pointer px-4 py-3 bg-green-300 rounded-md`}
-      onClick={onClick}
+      className={`hover:cursor-pointer px-4 py-3 bg-green-300 rounded-md disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
+      {...props}
     >
       {children}
     </button>

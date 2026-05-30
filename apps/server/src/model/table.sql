@@ -10,13 +10,16 @@ CREATE TABLE posts (
   updated_at TIMESTAMP DEFAULT NOW(),
   published_at TIMESTAMP DEFAULT NULL,
   thumbnail TEXT DEFAULT NULL,
-  isPublished BOOLEAN DEFAULT 0
+  is_published BOOLEAN DEFAULT false
 );
 
 COMMENT ON TABLE posts IS '작성글 테이블';
 
 -- 251129 이관 작업 중 기존 데이터 중 범위를 벗어나는 데이터 처리 위한 사이즈 변경
 ALTER TABLE posts ALTER COLUMN title TYPE character varying(100);
+
+-- 기존 테이블에 ispublished 컬럼이 있으면 한 번만 실행
+-- ALTER TABLE posts RENAME COLUMN ispublished TO is_published;
 
 -- 카테고리
 CREATE TABLE categories

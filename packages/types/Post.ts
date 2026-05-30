@@ -1,5 +1,5 @@
 export const locales = ["ko", "en-US"] as const;
-export type Locales = typeof locales;
+export type Locales = typeof locales[number];
 
 export interface PostDto {
   title: string;
@@ -44,4 +44,24 @@ export interface PostMetadata {
   title: string,
   tags: string[],
   thumbnail: string,
+}
+
+export interface PostPublishRequest {
+  title: string;
+  slug: string;
+  locale: Locales;
+  categoryId: string;
+  brief?: string;
+  thumbnail?: string;
+  tags: string[];
+  content: string;
+}
+
+export interface PostPublishResponse {
+  id: number;
+  slug: string;
+}
+
+export interface ApiErrorResponse {
+  message: string;
 }
