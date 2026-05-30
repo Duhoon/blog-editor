@@ -62,6 +62,20 @@ export interface PostPublishResponse {
   slug: string;
 }
 
+export interface RecentPostSummary {
+  id: number;
+  title: string;
+  slug: string;
+  locale: Locales;
+  updatedAt: string;
+  publishedAt: string | null;
+  isPublished: boolean;
+}
+
+export interface RecentPostsResponse {
+  posts: RecentPostSummary[];
+}
+
 export interface ApiErrorResponse {
   message: string;
 }

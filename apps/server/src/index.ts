@@ -4,7 +4,7 @@ import express, { Request, Response } from 'express';
 import {logger, log} from './logger';
 import { upload } from './utils/multer';
 import { supabase } from './external/supabase';
-import { locales, PostPublishRequest, PostPublishResponse } from '@blog-editor/types/Post';
+import { locales, PostPublishRequest, PostPublishResponse, RecentPostsResponse, RecentPostSummary } from '@blog-editor/types/Post';
 
 const PORT_NUMBER = 8081;
 
@@ -18,6 +18,47 @@ app.use(express.urlencoded({extended: false}));
 app.get("/list", (req: Request, res: Response)=>{
     res.send("Hello World!");
 })
+
+app.get(
+    "/posts/recent",
+    async (
+        req: Request<{}, RecentPostsResponse | {message: string}, {}, {limit?: string}>,
+        res: Response<RecentPostsResponse | {message: string}>
+    )=> {
+        try {
+            const requestedLimit = Number.parseInt(req.query.limit ?? "10", 10);
+            const limit = Number.isNaN(requestedLimit)
+                ? 10
+                : Math.min(Math.max(requestedLimit, 1), 20);
+
+            const {data, error} = await supabase
+                .from("posts")
+                .select("id, title, slug, locale, updated_at, published_at, is_published")
+                .order("updated_at", {ascending: false})
+                .limit(limit);
+
+            if (error) throw error;
+
+            const posts: RecentPostSummary[] = (data ?? []).map((post)=>({
+                id: post.id,
+                title: post.title,
+                slug: post.slug,
+                locale: post.locale,
+                updatedAt: post.updated_at,
+                publishedAt: post.published_at,
+                isPublished: Boolean(post.is_published),
+            }));
+
+            res.status(200).json({posts});
+            return;
+        } catch(err) {
+            const message = err instanceof Error ? err.message : String(err);
+            logger.error(`최근 포스트 목록 조회에 실패했습니다. ${message}`);
+            res.status(500).json({message: "최근 포스트 목록 조회에 실패했습니다."});
+            return;
+        }
+    }
+)
 
 app.post(
     "/posts",

@@ -285,7 +285,7 @@ export default function Editor() {
   }, [draftSavedAt, draftStatus]);
 
   return (
-    <form className="min-h-screen bg-slate-50 px-4 py-4 text-slate-900" onSubmit={handlePublish}>
+    <form className="min-h-screen flex-1 bg-slate-50 px-4 py-4 text-slate-900" onSubmit={handlePublish}>
       {/* 포스트 발행 및 액션 바 */}
       <div className={`mb-3 flex items-center justify-between gap-3`}>
         <div className="min-h-6 text-sm">
