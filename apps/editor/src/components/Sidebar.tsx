@@ -13,9 +13,10 @@ function formatDate(value: string) {
 interface SidebarProps {
   selectedPostId: number | null;
   onSelectPost: (postId: number) => void;
+  onCreateNewPost: () => void;
 }
 
-export default function Sidebar ({selectedPostId, onSelectPost}: SidebarProps){
+export default function Sidebar ({selectedPostId, onSelectPost, onCreateNewPost}: SidebarProps){
   const [posts, setPosts] = useState<RecentPostSummary[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string>("");
@@ -62,6 +63,14 @@ export default function Sidebar ({selectedPostId, onSelectPost}: SidebarProps){
         <h2 className="text-base font-semibold">최근 작성글</h2>
         <p className="mt-1 text-xs text-slate-500">Supabase posts</p>
       </div>
+
+      <button
+        className="mb-4 w-full rounded-md bg-green-600 px-3 py-2 text-sm font-medium text-white hover:cursor-pointer hover:bg-green-700"
+        type="button"
+        onClick={onCreateNewPost}
+      >
+        새 글 작성
+      </button>
 
       {isLoading && (
         <div className="rounded-md border border-slate-200 px-3 py-4 text-sm text-slate-500">

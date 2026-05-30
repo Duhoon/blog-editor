@@ -44,6 +44,28 @@ Add a left sidebar that shows the 10 most recent posts from Supabase through the
 - `pnpm --filter @blog-editor/editor build`
 - Server TypeScript check
 
+## New Post Button
+
+- ID: `new-post-button`
+- Status: `approved`
+
+### Summary
+
+Add a `새 글 작성` button at the top of the sidebar. Clicking it switches the app back to new-post mode, clears the selected sidebar post, and restores the local browser temp draft if one exists; otherwise the editor shows the default blank new-post form.
+
+### Changes
+
+- Add a new-post signal in `App`.
+- Pass `onCreateNewPost` to `Sidebar`.
+- Pass the new-post signal to `Editor`.
+- Add `새 글 작성` above the recent post list.
+- Reset existing-post display state and restore local draft or blank defaults in the editor.
+- Update `docs/history.md` after implementation.
+
+### Verification
+
+- `pnpm --filter @blog-editor/editor build`
+
 ## Load Sidebar Post Into Editor
 
 - ID: `load-sidebar-post-into-editor`

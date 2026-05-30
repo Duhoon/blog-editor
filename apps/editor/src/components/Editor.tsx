@@ -78,10 +78,11 @@ function parseDraft(value: string | null): LocalPostDraft | null {
 
 interface EditorProps {
   selectedPostId: number | null;
+  newPostVersion: number;
   onRejectSelectedPost: () => void;
 }
 
-export default function Editor({selectedPostId, onRejectSelectedPost}: EditorProps) {
+export default function Editor({selectedPostId, newPostVersion, onRejectSelectedPost}: EditorProps) {
   const [ title, setTitle ] = useState<string>("");
   const [ slug, setSlug ] = useState<string>("");
   const [ locale, setLocale ] = useState<Locales>("ko");
@@ -151,6 +152,34 @@ export default function Editor({selectedPostId, onRejectSelectedPost}: EditorPro
     setTag("");
     setLoadedPostId(null);
     editorRef.current?.getInstance().setMarkdown(defaultDraft.content);
+  };
+
+  const restoreNewPost = () => {
+    setLoadedPostId(null);
+    setStatusMessage("");
+    setErrorMessage("");
+    setIsLoadingPost(false);
+
+    const draft = parseDraft(localStorage.getItem(DRAFT_STORAGE_KEY));
+    if (draft) {
+      setTitle(draft.title);
+      setSlug(draft.slug);
+      setLocale(draft.locale);
+      setCategoryId(draft.categoryId || categoryOptions[0].id);
+      setBrief(draft.brief);
+      setThumbnail(draft.thumbnail);
+      setTags(draft.tags);
+      setTag("");
+      setDraftSavedAt(draft.savedAt);
+      setDraftStatus("loaded");
+      editorRef.current?.getInstance().setMarkdown(draft.content);
+      setStatusMessage("임시 저장 불러옴");
+      return;
+    }
+
+    resetEditor();
+    setDraftSavedAt("");
+    setDraftStatus("idle");
   };
 
   const clearDraft = () => {
@@ -248,6 +277,12 @@ export default function Editor({selectedPostId, onRejectSelectedPost}: EditorPro
     setDraftStatus("loaded");
     editorRef.current?.getInstance().setMarkdown(draft.content);
   }, [editorLoaded]);
+
+  useEffect(()=>{
+    if (!editorLoaded || newPostVersion === 0) return;
+
+    restoreNewPost();
+  }, [editorLoaded, newPostVersion]);
 
   useEffect(()=>{
     if (!editorLoaded || !selectedPostId) return;
