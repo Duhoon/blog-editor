@@ -4,7 +4,7 @@ import express, { Request, Response } from 'express';
 import {logger, log} from './logger';
 import { upload } from './utils/multer';
 import { supabase } from './external/supabase';
-import { locales, PostPublishRequest, PostPublishResponse, RecentPostsResponse, RecentPostSummary } from '@blog-editor/types/Post';
+import { locales, PostDetail, PostDetailResponse, PostPublishRequest, PostPublishResponse, RecentPostsResponse, RecentPostSummary } from '@blog-editor/types/Post';
 
 const PORT_NUMBER = 8081;
 
@@ -55,6 +55,93 @@ app.get(
             const message = err instanceof Error ? err.message : String(err);
             logger.error(`최근 포스트 목록 조회에 실패했습니다. ${message}`);
             res.status(500).json({message: "최근 포스트 목록 조회에 실패했습니다."});
+            return;
+        }
+    }
+)
+
+app.get(
+    "/posts/:id",
+    async (
+        req: Request<{id: string}, PostDetailResponse | {message: string}>,
+        res: Response<PostDetailResponse | {message: string}>
+    )=> {
+        try {
+            const postId = Number.parseInt(req.params.id, 10);
+            if (Number.isNaN(postId)) {
+                res.status(400).json({message: "올바르지 않은 포스트 ID입니다."});
+                return;
+            }
+
+            const {data: post, error: postError} = await supabase
+                .from("posts")
+                .select("id, title, slug, locale, brief, thumbnail, content, updated_at, published_at, is_published")
+                .eq("id", postId)
+                .maybeSingle();
+
+            if (postError) throw postError;
+
+            if (!post) {
+                res.status(404).json({message: "포스트를 찾을 수 없습니다."});
+                return;
+            }
+
+            const {data: categoryLinks, error: categoryError} = await supabase
+                .from("post_category_links")
+                .select("category_id")
+                .eq("post_id", postId)
+                .eq("is_active", true)
+                .limit(1);
+
+            if (categoryError) throw categoryError;
+
+            const {data: tagLinks, error: tagLinkError} = await supabase
+                .from("tag_post_links")
+                .select("tag_id")
+                .eq("post_id", postId)
+                .eq("is_active", true);
+
+            if (tagLinkError) throw tagLinkError;
+
+            const tagIds = (tagLinks ?? []).map((link)=> link.tag_id);
+            let tags: string[] = [];
+
+            if (tagIds.length > 0) {
+                const {data: tagEntries, error: tagError} = await supabase
+                    .from("tags")
+                    .select("id, name")
+                    .in("id", tagIds);
+
+                if (tagError) throw tagError;
+
+                const tagNameById = new Map((tagEntries ?? []).map((tag)=> [tag.id, tag.name]));
+                tags = tagIds.flatMap((tagId)=> {
+                    const tagName = tagNameById.get(tagId);
+                    return tagName ? [tagName] : [];
+                });
+            }
+
+            const detail: PostDetail = {
+                id: post.id,
+                title: post.title,
+                slug: post.slug,
+                locale: post.locale,
+                brief: post.brief ?? "",
+                thumbnail: post.thumbnail ?? "",
+                content: post.content,
+                categoryId: categoryLinks?.[0]?.category_id ?? "",
+                tags,
+                updatedAt: post.updated_at,
+                publishedAt: post.published_at,
+                isPublished: Boolean(post.is_published),
+            };
+
+            res.status(200).json({post: detail});
+            return;
+        } catch(err) {
+            const message = err instanceof Error ? err.message : String(err);
+            logger.error(`포스트 상세 조회에 실패했습니다. ${message}`);
+            res.status(500).json({message: "포스트 상세 조회에 실패했습니다."});
             return;
         }
     }

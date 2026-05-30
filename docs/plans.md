@@ -43,3 +43,26 @@ Add a left sidebar that shows the 10 most recent posts from Supabase through the
 
 - `pnpm --filter @blog-editor/editor build`
 - Server TypeScript check
+
+## Load Sidebar Post Into Editor
+
+- ID: `load-sidebar-post-into-editor`
+- Status: `approved`
+
+### Summary
+
+Make sidebar rows clickable. Clicking a post fetches full post details from Supabase through the Express API and populates the existing editor form and Toast UI markdown. Existing posts are displayed in the editor form only; update/save-existing-post behavior is not part of this task.
+
+### Changes
+
+- Add shared post detail response types in `@blog-editor/types`.
+- Add `GET /posts/:id` to the Express server with post, category, and tag data.
+- Move selected-post state into `App`.
+- Make `Sidebar` rows clickable and highlight the selected row.
+- Update `Editor` to load selected post details, confirm before replacing a local temp draft, and disable publishing while an existing post is loaded.
+- Update `docs/history.md` after implementation.
+
+### Verification
+
+- `pnpm --filter @blog-editor/editor build`
+- Server TypeScript check

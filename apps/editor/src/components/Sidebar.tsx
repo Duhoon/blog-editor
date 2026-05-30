@@ -10,7 +10,12 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
-export default function Sidebar (){
+interface SidebarProps {
+  selectedPostId: number | null;
+  onSelectPost: (postId: number) => void;
+}
+
+export default function Sidebar ({selectedPostId, onSelectPost}: SidebarProps){
   const [posts, setPosts] = useState<RecentPostSummary[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string>("");
@@ -79,25 +84,32 @@ export default function Sidebar (){
       {!isLoading && !errorMessage && posts.length > 0 && (
         <ul className="space-y-2">
           {posts.map((post)=>(
-            <li
-              className="rounded-md border border-slate-200 px-3 py-3"
-              key={post.id}
-            >
-              <div className="mb-2 flex items-center justify-between gap-2">
-                <span className="truncate text-xs text-slate-500">{post.locale}</span>
-                <span
-                  className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${
-                    post.isPublished
-                      ? "bg-green-100 text-green-700"
-                      : "bg-amber-100 text-amber-700"
-                  }`}
-                >
-                  {post.isPublished ? "발행" : "초안"}
-                </span>
-              </div>
-              <h3 className="line-clamp-2 text-sm font-medium leading-5">{post.title}</h3>
-              <p className="mt-1 truncate text-xs text-slate-500">/{post.slug}</p>
-              <p className="mt-2 text-xs text-slate-400">{formatDate(post.updatedAt)}</p>
+            <li key={post.id}>
+              <button
+                className={`w-full rounded-md border px-3 py-3 text-left hover:cursor-pointer hover:border-slate-400 ${
+                  selectedPostId === post.id
+                    ? "border-green-500 bg-green-50"
+                    : "border-slate-200 bg-white"
+                }`}
+                type="button"
+                onClick={()=> onSelectPost(post.id)}
+              >
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <span className="truncate text-xs text-slate-500">{post.locale}</span>
+                  <span
+                    className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${
+                      post.isPublished
+                        ? "bg-green-100 text-green-700"
+                        : "bg-amber-100 text-amber-700"
+                    }`}
+                  >
+                    {post.isPublished ? "발행" : "초안"}
+                  </span>
+                </div>
+                <h3 className="line-clamp-2 text-sm font-medium leading-5">{post.title}</h3>
+                <p className="mt-1 truncate text-xs text-slate-500">/{post.slug}</p>
+                <p className="mt-2 text-xs text-slate-400">{formatDate(post.updatedAt)}</p>
+              </button>
             </li>
           ))}
         </ul>

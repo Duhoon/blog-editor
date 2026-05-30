@@ -16,3 +16,13 @@
 - Implemented the editor sidebar with loading, empty, error, published, and draft states.
 - Updated the app layout to render the sidebar beside the editor.
 - Verified with `pnpm --filter @blog-editor/editor build` and server TypeScript check.
+
+## 2026-05-30
+
+- Prompt instruction: Clicking a post in Sidebar list, display that post info on editor screen.
+- Recorded the approved load-sidebar-post plan in `docs/plans.md` before implementation.
+- Added a Supabase-backed `GET /posts/:id` server endpoint for post details, active category, and active tags.
+- Made sidebar rows clickable and highlighted the selected post.
+- Loaded selected post fields and Markdown content into the existing editor screen.
+- Added confirmation before replacing a local temp draft and disabled publish for loaded existing posts.
+- Verified with `pnpm --filter @blog-editor/editor build` and server TypeScript check.

@@ -76,6 +76,25 @@ export interface RecentPostsResponse {
   posts: RecentPostSummary[];
 }
 
+export interface PostDetail {
+  id: number;
+  title: string;
+  slug: string;
+  locale: Locales;
+  brief: string;
+  thumbnail: string;
+  content: string;
+  categoryId: string;
+  tags: string[];
+  updatedAt: string;
+  publishedAt: string | null;
+  isPublished: boolean;
+}
+
+export interface PostDetailResponse {
+  post: PostDetail;
+}
+
 export interface ApiErrorResponse {
   message: string;
 }

@@ -3,7 +3,7 @@ import Button from "./Button";
 import "@toast-ui/editor/toastui-editor.css";
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { ApiErrorResponse, locales, Locales, PostPublishRequest, PostPublishResponse } from "@blog-editor/types/Post";
+import { ApiErrorResponse, locales, Locales, PostDetailResponse, PostPublishRequest, PostPublishResponse } from "@blog-editor/types/Post";
 
 const categoryOptions = [
   {id: "development", label: "개발"},
@@ -76,7 +76,12 @@ function parseDraft(value: string | null): LocalPostDraft | null {
   }
 }
 
-export default function Editor() {
+interface EditorProps {
+  selectedPostId: number | null;
+  onRejectSelectedPost: () => void;
+}
+
+export default function Editor({selectedPostId, onRejectSelectedPost}: EditorProps) {
   const [ title, setTitle ] = useState<string>("");
   const [ slug, setSlug ] = useState<string>("");
   const [ locale, setLocale ] = useState<Locales>("ko");
@@ -88,6 +93,8 @@ export default function Editor() {
   const [ isPublishing, setIsPublishing ] = useState<boolean>(false);
   const [ statusMessage, setStatusMessage ] = useState<string>("");
   const [ errorMessage, setErrorMessage ] = useState<string>("");
+  const [ loadedPostId, setLoadedPostId ] = useState<number | null>(null);
+  const [ isLoadingPost, setIsLoadingPost ] = useState<boolean>(false);
   const [ draftStatus, setDraftStatus ] = useState<DraftStatus>("idle");
   const [ draftSavedAt, setDraftSavedAt ] = useState<string>("");
   const [ editorLoaded, setEditorLoaded ] = useState<boolean>(false);
@@ -109,6 +116,15 @@ export default function Editor() {
   }
 
   const getEditorContent = () => editorRef.current?.getInstance().getMarkdown() ?? "";
+
+  const hasMeaningfulEditorContent = () => Boolean(
+    title.trim()
+    || slug.trim()
+    || brief.trim()
+    || thumbnail.trim()
+    || tags.length
+    || getEditorContent().trim()
+  );
 
   const buildDraft = (): LocalPostDraft => ({
     title,
@@ -133,6 +149,7 @@ export default function Editor() {
     setThumbnail(defaultDraft.thumbnail);
     setTags(defaultDraft.tags);
     setTag("");
+    setLoadedPostId(null);
     editorRef.current?.getInstance().setMarkdown(defaultDraft.content);
   };
 
@@ -179,6 +196,11 @@ export default function Editor() {
       tags,
       content,
     };
+
+    if (loadedPostId) {
+      setErrorMessage("기존 글 수정 저장은 아직 지원하지 않습니다.");
+      return;
+    }
 
     setIsPublishing(true);
 
@@ -228,7 +250,83 @@ export default function Editor() {
   }, [editorLoaded]);
 
   useEffect(()=>{
-    if (!editorLoaded || !hasRestoredDraftRef.current) return;
+    if (!editorLoaded || !selectedPostId) return;
+    if (selectedPostId === loadedPostId) return;
+
+    const draft = parseDraft(localStorage.getItem(DRAFT_STORAGE_KEY));
+    const hasLocalDraft = Boolean(
+      draft
+      && (
+        draft.title.trim()
+        || draft.slug.trim()
+        || draft.brief.trim()
+        || draft.thumbnail.trim()
+        || draft.tags.length
+        || draft.content.trim()
+      )
+    );
+
+    if (!loadedPostId && hasLocalDraft && hasMeaningfulEditorContent()) {
+      const shouldReplace = window.confirm("현재 임시 저장된 새 글 내용을 불러올 글로 바꿀까요?");
+      if (!shouldReplace) {
+        onRejectSelectedPost();
+        return;
+      }
+    }
+
+    let ignore = false;
+
+    const loadPost = async () => {
+      setIsLoadingPost(true);
+      setErrorMessage("");
+      setStatusMessage("");
+
+      try {
+        const response = await fetch(`/api/posts/${selectedPostId}`);
+        const data = await response.json() as PostDetailResponse | ApiErrorResponse;
+
+        if (!response.ok) {
+          throw new Error("message" in data ? data.message : "포스트를 불러오지 못했습니다.");
+        }
+
+        if (ignore) return;
+
+        const {post} = data as PostDetailResponse;
+
+        skipNextDraftSaveRef.current = true;
+        setLoadedPostId(post.id);
+        setTitle(post.title);
+        setSlug(post.slug);
+        setLocale(post.locale);
+        setCategoryId(post.categoryId || categoryOptions[0].id);
+        setBrief(post.brief);
+        setThumbnail(post.thumbnail);
+        setTags(post.tags);
+        setTag("");
+        setDraftStatus("idle");
+        setDraftSavedAt("");
+        editorRef.current?.getInstance().setMarkdown(post.content);
+        setStatusMessage(`불러온 글: ${post.title}`);
+      } catch (error) {
+        if (!ignore) {
+          setErrorMessage(error instanceof Error ? error.message : "포스트를 불러오지 못했습니다.");
+        }
+      } finally {
+        if (!ignore) {
+          setIsLoadingPost(false);
+        }
+      }
+    };
+
+    loadPost();
+
+    return () => {
+      ignore = true;
+    };
+  }, [editorLoaded, loadedPostId, onRejectSelectedPost, selectedPostId]);
+
+  useEffect(()=>{
+    if (!editorLoaded || !hasRestoredDraftRef.current || loadedPostId) return;
 
     if (skipNextDraftSaveRef.current) {
       skipNextDraftSaveRef.current = false;
@@ -265,7 +363,7 @@ export default function Editor() {
     }, 500);
 
     return () => window.clearTimeout(timeoutId);
-  }, [brief, categoryId, contentVersion, editorLoaded, locale, slug, tags, thumbnail, title]);
+  }, [brief, categoryId, contentVersion, editorLoaded, loadedPostId, locale, slug, tags, thumbnail, title]);
 
   const draftStatusMessage = useMemo(()=>{
     switch (draftStatus) {
@@ -290,6 +388,7 @@ export default function Editor() {
       <div className={`mb-3 flex items-center justify-between gap-3`}>
         <div className="min-h-6 text-sm">
           {errorMessage && <p className="text-red-600">{errorMessage}</p>}
+          {isLoadingPost && <p className="text-slate-500">포스트 불러오는 중</p>}
           {statusMessage && <p className="text-green-700">{statusMessage}</p>}
         </div>
         <div className="flex items-center gap-2">
@@ -299,9 +398,15 @@ export default function Editor() {
           <Button type="button" className="bg-slate-200 text-slate-700" onClick={clearDraft}>
             임시 저장 삭제
           </Button>
-          <Button type="submit" disabled={!canPublish}>
-            {isPublishing ? "발행 중" : "발행"}
-          </Button>
+          {loadedPostId ? (
+            <Button type="button" disabled>
+              기존 글 표시 중
+            </Button>
+          ) : (
+            <Button type="submit" disabled={!canPublish}>
+              {isPublishing ? "발행 중" : "발행"}
+            </Button>
+          )}
         </div>
       </div>
       {/* 포스트 제목 입력 부분 */}
