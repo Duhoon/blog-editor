@@ -74,6 +74,12 @@ export interface RecentPostSummary {
 
 export interface RecentPostsResponse {
   posts: RecentPostSummary[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
 }
 
 export interface PostDetail {

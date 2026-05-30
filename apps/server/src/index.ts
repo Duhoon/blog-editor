@@ -22,22 +22,31 @@ app.get("/list", (req: Request, res: Response)=>{
 app.get(
     "/posts/recent",
     async (
-        req: Request<{}, RecentPostsResponse | {message: string}, {}, {limit?: string}>,
+        req: Request<{}, RecentPostsResponse | {message: string}, {}, {limit?: string, page?: string}>,
         res: Response<RecentPostsResponse | {message: string}>
     )=> {
         try {
+            const requestedPage = Number.parseInt(req.query.page ?? "1", 10);
             const requestedLimit = Number.parseInt(req.query.limit ?? "10", 10);
+            const page = Number.isNaN(requestedPage)
+                ? 1
+                : Math.max(requestedPage, 1);
             const limit = Number.isNaN(requestedLimit)
                 ? 10
                 : Math.min(Math.max(requestedLimit, 1), 20);
+            const from = (page - 1) * limit;
+            const to = from + limit - 1;
 
-            const {data, error} = await supabase
+            const {data, error, count} = await supabase
                 .from("posts")
-                .select("id, title, slug, locale, updated_at, published_at, is_published")
+                .select("id, title, slug, locale, updated_at, published_at, is_published", {count: "exact"})
                 .order("updated_at", {ascending: false})
-                .limit(limit);
+                .range(from, to);
 
             if (error) throw error;
+
+            const total = count ?? 0;
+            const totalPages = Math.max(Math.ceil(total / limit), 1);
 
             const posts: RecentPostSummary[] = (data ?? []).map((post)=>({
                 id: post.id,
@@ -49,7 +58,15 @@ app.get(
                 isPublished: Boolean(post.is_published),
             }));
 
-            res.status(200).json({posts});
+            res.status(200).json({
+                posts,
+                page,
+                limit,
+                total,
+                totalPages,
+                hasPreviousPage: page > 1,
+                hasNextPage: page < totalPages,
+            });
             return;
         } catch(err) {
             const message = err instanceof Error ? err.message : String(err);

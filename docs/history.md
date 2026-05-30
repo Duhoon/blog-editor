@@ -35,3 +35,12 @@
 - Wired app state so the button clears the selected post and switches the editor to new-post mode.
 - Restored local browser temp draft when available, otherwise reset the editor to blank defaults.
 - Verified with `pnpm --filter @blog-editor/editor build`.
+
+## 2026-05-30
+
+- Prompt instruction: make pagination with side arrow in sidebar to display other posts.
+- Recorded the approved sidebar pagination plan in `docs/plans.md` before implementation.
+- Extended the recent posts API response with pagination metadata.
+- Updated `GET /posts/recent` to support `page` and `limit` using Supabase range queries and exact count.
+- Added previous/next arrow controls and a page indicator to the sidebar.
+- Verified with `pnpm --filter @blog-editor/editor build` and server TypeScript check.

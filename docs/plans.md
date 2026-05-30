@@ -44,6 +44,29 @@ Add a left sidebar that shows the 10 most recent posts from Supabase through the
 - `pnpm --filter @blog-editor/editor build`
 - Server TypeScript check
 
+## Sidebar Pagination With Side Arrows
+
+- ID: `sidebar-pagination-side-arrows`
+- Status: `approved`
+
+### Summary
+
+Add previous/next pagination controls to the sidebar post list so users can browse beyond the first 10 Supabase posts. Pagination uses the existing recent-post list flow, ordered by `updated_at` descending.
+
+### Changes
+
+- Extend `RecentPostsResponse` with pagination metadata.
+- Update `GET /posts/recent` to accept `page` and `limit`, use Supabase `range`, and return exact count.
+- Track `page` in `Sidebar` and fetch `/api/posts/recent?page=${page}&limit=10`.
+- Add side arrow controls with disabled states and compact page indicator.
+- Preserve existing sidebar click-to-load and new-post behavior.
+- Update `docs/history.md` after implementation.
+
+### Verification
+
+- `pnpm --filter @blog-editor/editor build`
+- Server TypeScript check
+
 ## New Post Button
 
 - ID: `new-post-button`
